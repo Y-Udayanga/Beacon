@@ -2,15 +2,21 @@
 
 import { LayoutDashboard, UserSearch, Camera, Mic, Square, Send, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  appendLocationToFormData,
+  getCurrentPosition,
+  type UserLocation,
+} from "@/lib/geolocation";
 import {
   capturePhotoOnly,
   startAudioRecording,
   stopAudioRecording,
-  PanicSnapCaptureError,
 } from "@/lib/panic-snap-capture";
 import type { PanicSnapResponse } from "@/lib/types";
+import { EmergencyBar } from "./EmergencyBar";
 import { FirstAidModal } from "./FirstAidModal";
+import { LocationBanner } from "./LocationBanner";
 import { MissingPersonForm } from "./MissingPersonForm";
 
 type View = "home" | "missing";
@@ -27,6 +33,19 @@ export function VictimApp() {
   
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+
+  const [location, setLocation] = useState<UserLocation | null>(null);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getCurrentPosition()
+      .then(setLocation)
+      .catch((err) =>
+        setLocationError(err instanceof Error ? err.message : "Location unavailable")
+      )
+      .finally(() => setLocationLoading(false));
+  }, []);
 
   const handleCaptureImage = useCallback(async () => {
     setApiError(null);
@@ -69,6 +88,7 @@ export function VictimApp() {
       const formData = new FormData();
       if (imageBlob) formData.append("image", imageBlob, "snapshot.jpg");
       if (audioBlob) formData.append("audio", audioBlob, "recording.webm");
+      appendLocationToFormData(formData, location);
 
       const res = await fetch("/api/panic-snap", { method: "POST", body: formData });
       const data = await res.json().catch(() => ({}));
@@ -88,12 +108,17 @@ export function VictimApp() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [imageBlob, audioBlob]);
+  }, [imageBlob, audioBlob, location]);
 
   if (view === "missing") {
     return (
       <div className="flex min-h-dvh flex-col bg-[#050508]">
-        <MissingPersonForm onBack={() => setView("home")} />
+        <MissingPersonForm
+          onBack={() => setView("home")}
+          location={location}
+          locationLoading={locationLoading}
+          locationError={locationError}
+        />
       </div>
     );
   }
@@ -118,6 +143,12 @@ export function VictimApp() {
 
       <main className="flex flex-1 flex-col items-center justify-center px-6 pb-8">
         <div className="w-full max-w-sm space-y-4">
+          <EmergencyBar location={location} />
+          <LocationBanner
+            location={location}
+            loading={locationLoading}
+            error={locationError}
+          />
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
             <h2 className="mb-4 text-center text-sm font-medium text-zinc-300">Gather Evidence</h2>
             

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { addMissingReport } from "@/lib/beacon-store";
 import {
   blobToInlinePart,
   createGeminiClient,
@@ -8,6 +9,7 @@ import {
   SchemaType,
   type GeminiSchema,
 } from "@/lib/gemini";
+import { parseLocationFromFormData } from "@/lib/geolocation";
 import type { MissingPersonExtraction } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -86,7 +88,20 @@ export async function POST(request: Request) {
     }
 
     const parsed = parseModelJson<MissingPersonExtraction>(text);
-    return NextResponse.json(parsed);
+    const location = parseLocationFromFormData(formData);
+
+    const report = addMissingReport({
+      description: description.trim(),
+      status: "searching",
+      latitude: location?.lat,
+      longitude: location?.lng,
+      extraction: parsed,
+    });
+
+    return NextResponse.json({
+      ...parsed,
+      report_id: report.id,
+    });
   } catch (error) {
     console.error("[missing-person]", error);
 

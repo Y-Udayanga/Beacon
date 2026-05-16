@@ -37,6 +37,15 @@ export function FirstAidModal({ open, onClose, data }: FirstAidModalProps) {
           </div>
         </div>
 
+        {data.visual_assessment && (
+          <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-blue-400">
+              Visual Assessment
+            </p>
+            <p className="text-sm text-zinc-300">{data.visual_assessment}</p>
+          </div>
+        )}
+
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
           <div className="mb-2 flex items-center gap-2 text-amber-400">
             <AlertTriangle className="h-4 w-4" />
@@ -46,6 +55,12 @@ export function FirstAidModal({ open, onClose, data }: FirstAidModalProps) {
           </div>
           <p className="text-sm italic text-zinc-300">&ldquo;{data.translated_audio}&rdquo;</p>
         </div>
+
+        {data.ticket_id && (
+          <p className="text-center text-xs text-zinc-500">
+            Dispatch ticket <span className="font-mono text-zinc-400">{data.ticket_id}</span> created
+          </p>
+        )}
 
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
           <div className="mb-3 flex items-center gap-2 text-emerald-400">

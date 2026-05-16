@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Eye, MessageSquare, Send } from "lucide-react";
+import { Clock, Eye, MapPin, MessageSquare, Send } from "lucide-react";
 import type { EmergencyTicket } from "@/lib/types";
 import { cn, getTriageColor, getTriageLabel } from "@/lib/utils";
 
@@ -56,10 +56,23 @@ export function TicketCard({ ticket, onDispatch }: TicketCardProps) {
       </div>
 
       <div className="flex items-center justify-between border-t border-white/5 pt-3">
-        <span className="flex items-center gap-1 text-xs text-zinc-600">
-          <Clock className="h-3 w-3" />
-          {time}
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className="flex items-center gap-1 text-xs text-zinc-600">
+            <Clock className="h-3 w-3" />
+            {time}
+          </span>
+          {ticket.latitude != null && ticket.longitude != null && (
+            <a
+              href={`https://www.google.com/maps?q=${ticket.latitude},${ticket.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300"
+            >
+              <MapPin className="h-3 w-3" />
+              View on map
+            </a>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => onDispatch(ticket.id)}

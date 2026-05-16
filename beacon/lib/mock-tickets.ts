@@ -9,6 +9,8 @@ export const MOCK_TICKETS: EmergencyTicket[] = [
     visual_assessment: "Heavy debris, visible structural damage, multiple victims likely.",
     status: "incoming",
     created_at: new Date(Date.now() - 120000).toISOString(),
+    latitude: 6.932,
+    longitude: 79.848,
   },
   {
     id: "TKT-2846",
@@ -18,6 +20,8 @@ export const MOCK_TICKETS: EmergencyTicket[] = [
     visual_assessment: "Moderate smoke density, flames visible in upper frame.",
     status: "triaged",
     created_at: new Date(Date.now() - 300000).toISOString(),
+    latitude: 6.921,
+    longitude: 79.865,
   },
   {
     id: "TKT-2845",
@@ -27,6 +31,8 @@ export const MOCK_TICKETS: EmergencyTicket[] = [
     visual_assessment: "Single victim supine, no visible trauma, crowd forming.",
     status: "triaged",
     created_at: new Date(Date.now() - 600000).toISOString(),
+    latitude: 6.928,
+    longitude: 79.855,
   },
   {
     id: "TKT-2844",
@@ -36,5 +42,7 @@ export const MOCK_TICKETS: EmergencyTicket[] = [
     visual_assessment: "Crowded area, no immediate danger visible.",
     status: "dispatched",
     created_at: new Date(Date.now() - 900000).toISOString(),
+    latitude: 6.915,
+    longitude: 79.878,
   },
 ];

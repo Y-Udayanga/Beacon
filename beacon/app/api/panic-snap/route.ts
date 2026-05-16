@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { addTicket } from "@/lib/beacon-store";
 import {
   blobToInlinePart,
   createGeminiClient,
@@ -8,6 +9,7 @@ import {
   SchemaType,
   type GeminiSchema,
 } from "@/lib/gemini";
+import { parseLocationFromFormData } from "@/lib/geolocation";
 import type { PanicSnapResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -96,7 +98,24 @@ export async function POST(request: Request) {
     }
 
     const parsed = parseModelJson<PanicSnapResponse>(text);
-    return NextResponse.json(parsed);
+    const location = parseLocationFromFormData(formData);
+
+    const ticket = addTicket({
+      triage_level: Math.min(5, Math.max(1, Math.round(parsed.triage_level))),
+      incident_type: parsed.incident_type,
+      translated_audio: parsed.translated_audio,
+      visual_assessment: parsed.visual_assessment ?? "",
+      first_aid_instructions: parsed.first_aid_instructions,
+      latitude: location?.lat,
+      longitude: location?.lng,
+      status: parsed.triage_level >= 4 ? "incoming" : "triaged",
+    });
+
+    return NextResponse.json({
+      ...parsed,
+      triage_level: ticket.triage_level,
+      ticket_id: ticket.id,
+    });
   } catch (error) {
     console.error("[panic-snap]", error);
 

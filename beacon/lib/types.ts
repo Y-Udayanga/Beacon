@@ -4,6 +4,7 @@ export interface PanicSnapResponse {
   translated_audio: string;
   first_aid_instructions: string;
   visual_assessment?: string;
+  ticket_id?: string;
 }
 
 export interface EmergencyTicket {
@@ -14,6 +15,9 @@ export interface EmergencyTicket {
   visual_assessment: string;
   status: "incoming" | "triaged" | "dispatched";
   created_at: string;
+  latitude?: number;
+  longitude?: number;
+  first_aid_instructions?: string;
 }
 
 export interface MissingPersonReport {
@@ -21,6 +25,10 @@ export interface MissingPersonReport {
   description: string;
   photo_preview?: string;
   reported_at: string;
+  status: "new" | "searching" | "located";
+  latitude?: number;
+  longitude?: number;
+  extraction?: MissingPersonExtraction;
 }
 
 export interface MissingPersonExtraction {
