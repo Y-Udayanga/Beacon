@@ -1,6 +1,6 @@
 "use client";
 
-import { ImagePlus, Send, UserSearch } from "lucide-react";
+import { ImagePlus, Send, UserSearch, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ export function MissingPersonForm({ onBack }: MissingPersonFormProps) {
   const [description, setDescription] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,8 +23,12 @@ export function MissingPersonForm({ onBack }: MissingPersonFormProps) {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    // TODO: Connect this to actual API endpoint
+    await new Promise(r => setTimeout(r, 2000));
+    setIsSubmitting(false);
     setSubmitted(true);
   };
 
@@ -113,10 +118,11 @@ export function MissingPersonForm({ onBack }: MissingPersonFormProps) {
 
         <button
           type="submit"
-          className="mt-auto flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
+          disabled={isSubmitting}
+          className="mt-auto flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Send className="h-4 w-4" />
-          Submit Report
+          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {isSubmitting ? "Processing Details..." : "Submit Report"}
         </button>
       </form>
     </div>

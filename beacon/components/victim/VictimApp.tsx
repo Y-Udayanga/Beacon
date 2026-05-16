@@ -25,27 +25,50 @@ export function VictimApp() {
     if (overlay) return;
 
     setOverlay("recording");
-    await new Promise((r) => setTimeout(r, RECORDING_MS));
-
-    setOverlay("analyzing");
-
-    const formData = new FormData();
-    const mockImage = new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" });
-    const mockAudio = new Blob([new Uint8Array([0])], { type: "audio/webm" });
-    formData.append("image", mockImage, "snapshot.png");
-    formData.append("audio", mockAudio, "recording.webm");
 
     try {
       setApiError(null);
+      // 1. Request actual camera/mic permissions
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      
+      // 2. Capture Image Frame
+      const videoTrack = stream.getVideoTracks()[0];
+      const imageCapture = new ImageCapture(videoTrack);
+      const imageBlob = await imageCapture.takePhoto();
+
+      // 3. Record Audio
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks: BlobPart[] = [];
+      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+      mediaRecorder.start();
+
+      // Record for 3 seconds
+      await new Promise((r) => setTimeout(r, RECORDING_MS));
+
+      mediaRecorder.stop();
+      await new Promise((r) => { mediaRecorder.onstop = r; });
+      
+      // Stop the tracks to turn off the camera light
+      stream.getTracks().forEach(track => track.stop());
+
+      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+
+      setOverlay("analyzing");
+
+      const formData = new FormData();
+      formData.append("image", imageBlob, "snapshot.jpg");
+      formData.append("audio", audioBlob, "recording.webm");
+
       const res = await fetch("/api/panic-snap", { method: "POST", body: formData });
       if (!res.ok) throw new Error("Request failed");
       const data: PanicSnapResponse = await res.json();
       setResponse(data);
       setFirstAidOpen(true);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setResponse(null);
       setApiError(
-        "Analysis failed. Call emergency services immediately and follow local safety protocols."
+        "Analysis failed. Please check permissions or call emergency services immediately."
       );
     } finally {
       setOverlay(null);

@@ -41,30 +41,32 @@ export function DashboardShell() {
               <p className="mt-2 max-w-md text-sm text-zinc-500">
                 Reports from the victim app will appear here. Connect to your data layer for live intake.
               </p>
-              <div className="mt-8 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10">
+              <div className="mt-8 w-full max-w-4xl overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] shadow-2xl backdrop-blur-xl">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-white/5 text-xs uppercase text-zinc-500">
+                  <thead className="border-b border-white/10 bg-black/40 text-xs uppercase tracking-wider text-zinc-400">
                     <tr>
-                      <th className="px-4 py-3">ID</th>
-                      <th className="px-4 py-3">Description</th>
-                      <th className="px-4 py-3">Status</th>
+                      <th className="px-6 py-4 font-medium">Ticket ID</th>
+                      <th className="px-6 py-4 font-medium">Description</th>
+                      <th className="px-6 py-4 font-medium">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
-                    <tr>
-                      <td className="px-4 py-3 font-mono text-zinc-400">MP-102</td>
-                      <td className="px-4 py-3 text-zinc-300">Child, age 7, red jacket — east entrance</td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-400">
+                  <tbody className="divide-y divide-white/5 bg-transparent">
+                    <tr className="transition-colors hover:bg-white/[0.04]">
+                      <td className="px-6 py-4 font-mono text-zinc-300">MP-102</td>
+                      <td className="px-6 py-4 text-zinc-400">Child, age 7, red jacket — east entrance</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-400 shadow-sm">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                           Searching
                         </span>
                       </td>
                     </tr>
-                    <tr>
-                      <td className="px-4 py-3 font-mono text-zinc-400">MP-101</td>
-                      <td className="px-4 py-3 text-zinc-300">Elderly male, grey cap — evacuation zone B</td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
+                    <tr className="transition-colors hover:bg-white/[0.04]">
+                      <td className="px-6 py-4 font-mono text-zinc-300">MP-101</td>
+                      <td className="px-6 py-4 text-zinc-400">Elderly male, grey cap — evacuation zone B</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-400 shadow-sm">
+                          <span className="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
                           New
                         </span>
                       </td>

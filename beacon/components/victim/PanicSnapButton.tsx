@@ -10,7 +10,8 @@ interface PanicSnapButtonProps {
 export function PanicSnapButton({ onClick, disabled }: PanicSnapButtonProps) {
   return (
     <div className="relative flex items-center justify-center">
-      <span className="panic-ring pointer-events-none absolute h-[min(72vw,280px)] w-[min(72vw,280px)] rounded-full" />
+      <span className="panic-ring pointer-events-none absolute h-[min(72vw,280px)] w-[min(72vw,280px)] rounded-full border-4 border-red-500/30 animate-pulse" />
+      <span className="panic-ring-2 pointer-events-none absolute h-[min(80vw,310px)] w-[min(80vw,310px)] rounded-full border border-red-500/20 animate-[ping_3s_ease-in-out_infinite]" />
       <button
         type="button"
         onClick={onClick}

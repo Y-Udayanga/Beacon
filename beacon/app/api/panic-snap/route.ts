@@ -52,6 +52,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+    if (image.size > MAX_FILE_SIZE || audio.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File sizes must be under 4MB to prevent server memory exhaustion." },
+        { status: 413 }
+      );
+    }
+
     const client = createGeminiClient();
     const model = getGeminiModel(client, {
       responseMimeType: "application/json",
