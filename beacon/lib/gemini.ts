@@ -8,7 +8,7 @@ import {
 
 export type GeminiSchema = Schema;
 
-const MODEL_ID = "gemini-1.5-pro";
+const MODEL_ID = "gemini-1.5-pro-latest";
 
 /** Returns a configured Gemini client or throws if the API key is missing. */
 export function createGeminiClient(): GoogleGenerativeAI {

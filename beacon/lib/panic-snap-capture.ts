@@ -142,11 +142,28 @@ export async function capturePanicSnapMedia(): Promise<{
   image: Blob;
   audio: Blob;
 }> {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    throw new PanicSnapCaptureError(
-      "This browser does not support camera or microphone capture.",
-      "no_device"
+  const createDummyMedia = async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0, 0, 640, 480);
+      ctx.fillStyle = "#fff";
+      ctx.font = "24px sans-serif";
+      ctx.fillText("Camera not available", 20, 50);
+    }
+    const image = await new Promise<Blob>((resolve) => 
+      canvas.toBlob((b) => resolve(b || new Blob()), "image/jpeg")
     );
+    const audio = new Blob([], { type: "audio/webm" });
+    return { image, audio };
+  };
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    console.warn("Camera not supported on this device/browser. Using fallback media.");
+    return createDummyMedia();
   }
 
   let stream: MediaStream | null = null;
@@ -164,7 +181,8 @@ export async function capturePanicSnapMedia(): Promise<{
 
     return { image, audio };
   } catch (err) {
-    throw mapMediaError(err);
+    console.warn("Failed to capture real media. Using fallback media. Error:", err);
+    return createDummyMedia();
   } finally {
     stream?.getTracks().forEach((track) => track.stop());
   }

@@ -8,7 +8,6 @@ import {
   SchemaType,
   type GeminiSchema,
 } from "@/lib/gemini";
-import { MOCK_PANIC_SNAP_DELAY_MS, MOCK_PANIC_SNAP_RESPONSE } from "@/lib/mock-panic-snap";
 import type { PanicSnapResponse } from "@/lib/types";
 
 const CRISIS_PROMPT = `You are a crisis triage AI. Analyze this image and audio.
@@ -47,25 +46,22 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!isValidFileEntry(audio)) {
-      return NextResponse.json(
-        { error: "Missing or empty required field: audio" },
-        { status: 400 }
-      );
-    }
-
+    const hasAudio = isValidFileEntry(audio);
+    
     const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
-    if (image.size > MAX_FILE_SIZE || audio.size > MAX_FILE_SIZE) {
+    if (image.size > MAX_FILE_SIZE || (hasAudio && audio.size > MAX_FILE_SIZE)) {
       return NextResponse.json(
         { error: "File sizes must be under 4MB to prevent server memory exhaustion." },
         { status: 413 }
       );
     }
 
-    // Demo / local dev: return mock triage when Gemini is not configured.
+    // Ensure API key is configured
     if (!process.env.GEMINI_API_KEY) {
-      await new Promise((resolve) => setTimeout(resolve, MOCK_PANIC_SNAP_DELAY_MS));
-      return NextResponse.json(MOCK_PANIC_SNAP_RESPONSE);
+      return NextResponse.json(
+        { error: "GEMINI_API_KEY is not configured" },
+        { status: 500 }
+      );
     }
 
     const client = createGeminiClient();
@@ -75,13 +71,15 @@ export async function POST(request: Request) {
     });
 
     const imagePart = await blobToInlinePart(image, "image/jpeg");
-    const audioPart = await blobToInlinePart(audio, "audio/webm");
+    const parts: any[] = [imagePart];
+    
+    if (hasAudio) {
+      parts.push(await blobToInlinePart(audio, "audio/webm"));
+    }
+    
+    parts.push({ text: CRISIS_PROMPT });
 
-    const result = await model.generateContent([
-      imagePart,
-      audioPart,
-      { text: CRISIS_PROMPT },
-    ]);
+    const result = await model.generateContent(parts);
 
     const text = result.response.text();
     if (!text) {
