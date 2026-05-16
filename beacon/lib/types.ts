@@ -22,3 +22,10 @@ export interface MissingPersonReport {
   photo_preview?: string;
   reported_at: string;
 }
+
+export interface MissingPersonExtraction {
+  estimated_age: string;
+  clothing_colors: string[];
+  last_known_location: string;
+  distinguishing_features: string[];
+}

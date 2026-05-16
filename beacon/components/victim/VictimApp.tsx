@@ -19,6 +19,7 @@ export function VictimApp() {
   const [overlay, setOverlay] = useState<OverlayPhase>(null);
   const [firstAidOpen, setFirstAidOpen] = useState(false);
   const [response, setResponse] = useState<PanicSnapResponse | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const handlePanicSnap = useCallback(async () => {
     if (overlay) return;
@@ -35,19 +36,17 @@ export function VictimApp() {
     formData.append("audio", mockAudio, "recording.webm");
 
     try {
+      setApiError(null);
       const res = await fetch("/api/panic-snap", { method: "POST", body: formData });
       if (!res.ok) throw new Error("Request failed");
       const data: PanicSnapResponse = await res.json();
       setResponse(data);
       setFirstAidOpen(true);
     } catch {
-      setResponse({
-        triage_level: 5,
-        incident_type: "Unknown",
-        translated_audio: "Unable to process. Follow general emergency protocols.",
-        first_aid_instructions: "Call emergency services and stay in a safe location.",
-      });
-      setFirstAidOpen(true);
+      setResponse(null);
+      setApiError(
+        "Analysis failed. Call emergency services immediately and follow local safety protocols."
+      );
     } finally {
       setOverlay(null);
     }
@@ -85,6 +84,12 @@ export function VictimApp() {
         </p>
 
         <PanicSnapButton onClick={handlePanicSnap} disabled={!!overlay} />
+
+        {apiError && (
+          <p className="mt-6 max-w-[280px] text-center text-sm text-red-400" role="alert">
+            {apiError}
+          </p>
+        )}
 
         <p className="mt-10 text-center text-xs text-zinc-600">
           Your location &amp; media are encrypted in transit
