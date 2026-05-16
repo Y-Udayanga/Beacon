@@ -1,0 +1,40 @@
+import type { EmergencyTicket } from "./types";
+
+export const MOCK_TICKETS: EmergencyTicket[] = [
+  {
+    id: "TKT-2847",
+    triage_level: 5,
+    incident_type: "Structural Collapse",
+    translated_audio: "Building is falling, people trapped on the third floor!",
+    visual_assessment: "Heavy debris, visible structural damage, multiple victims likely.",
+    status: "incoming",
+    created_at: new Date(Date.now() - 120000).toISOString(),
+  },
+  {
+    id: "TKT-2846",
+    triage_level: 4,
+    incident_type: "Fire / Smoke",
+    translated_audio: "Kitchen fire spreading, can't find the extinguisher.",
+    visual_assessment: "Moderate smoke density, flames visible in upper frame.",
+    status: "triaged",
+    created_at: new Date(Date.now() - 300000).toISOString(),
+  },
+  {
+    id: "TKT-2845",
+    triage_level: 3,
+    incident_type: "Medical",
+    translated_audio: "Person collapsed, not responding but breathing.",
+    visual_assessment: "Single victim supine, no visible trauma, crowd forming.",
+    status: "triaged",
+    created_at: new Date(Date.now() - 600000).toISOString(),
+  },
+  {
+    id: "TKT-2844",
+    triage_level: 2,
+    incident_type: "Missing Person",
+    translated_audio: "Child separated from group near the east entrance.",
+    visual_assessment: "Crowded area, no immediate danger visible.",
+    status: "dispatched",
+    created_at: new Date(Date.now() - 900000).toISOString(),
+  },
+];

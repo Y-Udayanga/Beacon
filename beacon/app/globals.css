@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050508;
+  --foreground: #f4f4f5;
+  --surface: #0f0f14;
+  --surface-elevated: #16161d;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent-red: #ef4444;
+  --accent-red-glow: rgba(239, 68, 68, 0.45);
 }
 
 @theme inline {
@@ -12,15 +17,71 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes panic-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 40px var(--accent-red-glow), 0 0 80px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 60px var(--accent-red-glow), 0 0 120px rgba(239, 68, 68, 0.35);
+  }
+}
+
+.panic-button {
+  animation: panic-glow 2s ease-in-out infinite;
+}
+
+.panic-ring::before,
+.panic-ring::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-red);
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+.panic-ring::after {
+  animation-delay: 1s;
+}
+
+@keyframes recording-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.recording-dot {
+  animation: recording-pulse 1s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.analyze-spinner {
+  animation: spin-slow 1.2s linear infinite;
 }
