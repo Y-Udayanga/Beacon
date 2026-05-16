@@ -3,6 +3,10 @@
 import { LayoutDashboard, UserSearch } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import {
+  capturePanicSnapMedia,
+  PanicSnapCaptureError,
+} from "@/lib/panic-snap-capture";
 import type { PanicSnapResponse } from "@/lib/types";
 import { FirstAidModal } from "./FirstAidModal";
 import { MissingPersonForm } from "./MissingPersonForm";
@@ -11,8 +15,6 @@ import { RecordingOverlay } from "./RecordingOverlay";
 
 type View = "home" | "missing";
 type OverlayPhase = "recording" | "analyzing" | null;
-
-const RECORDING_MS = 3000;
 
 export function VictimApp() {
   const [view, setView] = useState<View>("home");
@@ -25,51 +27,43 @@ export function VictimApp() {
     if (overlay) return;
 
     setOverlay("recording");
+    setApiError(null);
 
     try {
-      setApiError(null);
-      // 1. Request actual camera/mic permissions
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      
-      // 2. Capture Image Frame
-      const videoTrack = stream.getVideoTracks()[0];
-      const imageCapture = new ImageCapture(videoTrack);
-      const imageBlob = await imageCapture.takePhoto();
-
-      // 3. Record Audio
-      const mediaRecorder = new MediaRecorder(stream);
-      const audioChunks: BlobPart[] = [];
-      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-      mediaRecorder.start();
-
-      // Record for 3 seconds
-      await new Promise((r) => setTimeout(r, RECORDING_MS));
-
-      mediaRecorder.stop();
-      await new Promise((r) => { mediaRecorder.onstop = r; });
-      
-      // Stop the tracks to turn off the camera light
-      stream.getTracks().forEach(track => track.stop());
-
-      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      const { image, audio } = await capturePanicSnapMedia();
 
       setOverlay("analyzing");
 
       const formData = new FormData();
-      formData.append("image", imageBlob, "snapshot.jpg");
-      formData.append("audio", audioBlob, "recording.webm");
+      formData.append("image", image, "snapshot.jpg");
+      formData.append("audio", audio, "recording.webm");
 
       const res = await fetch("/api/panic-snap", { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Request failed");
-      const data: PanicSnapResponse = await res.json();
-      setResponse(data);
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const message =
+          typeof data.error === "string"
+            ? data.error
+            : `Analysis request failed (${res.status})`;
+        throw new Error(message);
+      }
+
+      setResponse(data as PanicSnapResponse);
       setFirstAidOpen(true);
     } catch (err) {
       console.error(err);
       setResponse(null);
-      setApiError(
-        "Analysis failed. Please check permissions or call emergency services immediately."
-      );
+
+      if (err instanceof PanicSnapCaptureError) {
+        setApiError(err.message);
+      } else if (err instanceof Error) {
+        setApiError(err.message);
+      } else {
+        setApiError(
+          "Analysis failed. Please try again or call emergency services immediately."
+        );
+      }
     } finally {
       setOverlay(null);
     }

@@ -6,7 +6,9 @@ import {
   isValidFileEntry,
   parseModelJson,
   SchemaType,
+  type GeminiSchema,
 } from "@/lib/gemini";
+import { MOCK_PANIC_SNAP_DELAY_MS, MOCK_PANIC_SNAP_RESPONSE } from "@/lib/mock-panic-snap";
 import type { PanicSnapResponse } from "@/lib/types";
 
 const CRISIS_PROMPT = `You are a crisis triage AI. Analyze this image and audio.
@@ -14,7 +16,7 @@ const CRISIS_PROMPT = `You are a crisis triage AI. Analyze this image and audio.
 2) Assess the physical threat in the image.
 3) Output a structured JSON response with triage_level (number 1-5), incident_type (string), translated_audio (string), visual_assessment (string), and first_aid_instructions (string).`;
 
-const PANIC_SNAP_SCHEMA = {
+const PANIC_SNAP_SCHEMA: GeminiSchema = {
   type: SchemaType.OBJECT,
   properties: {
     triage_level: { type: SchemaType.NUMBER },
@@ -60,13 +62,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Demo / local dev: return mock triage when Gemini is not configured.
+    if (!process.env.GEMINI_API_KEY) {
+      await new Promise((resolve) => setTimeout(resolve, MOCK_PANIC_SNAP_DELAY_MS));
+      return NextResponse.json(MOCK_PANIC_SNAP_RESPONSE);
+    }
+
     const client = createGeminiClient();
     const model = getGeminiModel(client, {
       responseMimeType: "application/json",
       responseSchema: PANIC_SNAP_SCHEMA,
     });
 
-    const imagePart = await blobToInlinePart(image, "image/png");
+    const imagePart = await blobToInlinePart(image, "image/jpeg");
     const audioPart = await blobToInlinePart(audio, "audio/webm");
 
     const result = await model.generateContent([

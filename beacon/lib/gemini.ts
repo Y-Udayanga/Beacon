@@ -2,8 +2,11 @@ import {
   GoogleGenerativeAI,
   type GenerationConfig,
   type Part,
+  type Schema,
   SchemaType,
 } from "@google/generative-ai";
+
+export type GeminiSchema = Schema;
 
 const MODEL_ID = "gemini-1.5-pro";
 
@@ -40,9 +43,9 @@ export async function blobToInlinePart(blob: Blob, fallbackMime: string): Promis
   };
 }
 
-/** True when the FormData entry is a non-empty Blob/File. */
-export function isValidFileEntry(value: FormDataEntryValue | null): value is Blob {
-  return value instanceof Blob && value.size > 0;
+/** True when the FormData entry is a non-empty file upload. */
+export function isValidFileEntry(value: FormDataEntryValue | null): value is File {
+  return value instanceof File && value.size > 0;
 }
 
 /**

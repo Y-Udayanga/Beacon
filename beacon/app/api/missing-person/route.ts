@@ -6,10 +6,11 @@ import {
   isValidFileEntry,
   parseModelJson,
   SchemaType,
+  type GeminiSchema,
 } from "@/lib/gemini";
 import type { MissingPersonExtraction } from "@/lib/types";
 
-const MISSING_PERSON_SCHEMA = {
+const MISSING_PERSON_SCHEMA: GeminiSchema = {
   type: SchemaType.OBJECT,
   properties: {
     estimated_age: { type: SchemaType.STRING },
