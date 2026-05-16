@@ -10,6 +10,8 @@ import {
 } from "@/lib/gemini";
 import type { MissingPersonExtraction } from "@/lib/types";
 
+export const runtime = "nodejs";
+
 const MISSING_PERSON_SCHEMA: GeminiSchema = {
   type: SchemaType.OBJECT,
   properties: {

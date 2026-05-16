@@ -10,6 +10,8 @@ import {
 } from "@/lib/gemini";
 import type { PanicSnapResponse } from "@/lib/types";
 
+export const runtime = "nodejs";
+
 const CRISIS_PROMPT = `You are a crisis triage AI. Analyze this image and audio.
 1) Translate the audio to English.
 2) Assess the physical threat in the image.
@@ -39,17 +41,18 @@ export async function POST(request: Request) {
     const image = formData.get("image");
     const audio = formData.get("audio");
 
-    if (!isValidFileEntry(image)) {
+    const hasImage = isValidFileEntry(image);
+    const hasAudio = isValidFileEntry(audio);
+
+    if (!hasImage && !hasAudio) {
       return NextResponse.json(
-        { error: "Missing or empty required field: image" },
+        { error: "At least one media file (image or audio) is required." },
         { status: 400 }
       );
     }
-
-    const hasAudio = isValidFileEntry(audio);
     
     const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
-    if (image.size > MAX_FILE_SIZE || (hasAudio && audio.size > MAX_FILE_SIZE)) {
+    if ((hasImage && image.size > MAX_FILE_SIZE) || (hasAudio && audio.size > MAX_FILE_SIZE)) {
       return NextResponse.json(
         { error: "File sizes must be under 4MB to prevent server memory exhaustion." },
         { status: 413 }
@@ -70,8 +73,11 @@ export async function POST(request: Request) {
       responseSchema: PANIC_SNAP_SCHEMA,
     });
 
-    const imagePart = await blobToInlinePart(image, "image/jpeg");
-    const parts: any[] = [imagePart];
+    const parts: any[] = [];
+    
+    if (hasImage) {
+      parts.push(await blobToInlinePart(image, "image/jpeg"));
+    }
     
     if (hasAudio) {
       parts.push(await blobToInlinePart(audio, "audio/webm"));

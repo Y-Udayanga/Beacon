@@ -1,73 +1,94 @@
 "use client";
 
-import { LayoutDashboard, UserSearch } from "lucide-react";
+import { LayoutDashboard, UserSearch, Camera, Mic, Square, Send, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import {
-  capturePanicSnapMedia,
+  capturePhotoOnly,
+  startAudioRecording,
+  stopAudioRecording,
   PanicSnapCaptureError,
 } from "@/lib/panic-snap-capture";
 import type { PanicSnapResponse } from "@/lib/types";
 import { FirstAidModal } from "./FirstAidModal";
 import { MissingPersonForm } from "./MissingPersonForm";
-import { PanicSnapButton } from "./PanicSnapButton";
-import { RecordingOverlay } from "./RecordingOverlay";
 
 type View = "home" | "missing";
-type OverlayPhase = "recording" | "analyzing" | null;
 
 export function VictimApp() {
   const [view, setView] = useState<View>("home");
-  const [overlay, setOverlay] = useState<OverlayPhase>(null);
   const [firstAidOpen, setFirstAidOpen] = useState(false);
   const [response, setResponse] = useState<PanicSnapResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handlePanicSnap = useCallback(async () => {
-    if (overlay) return;
+  const [imageBlob, setImageBlob] = useState<Blob | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
 
-    setOverlay("recording");
+  const handleCaptureImage = useCallback(async () => {
+    setApiError(null);
+    try {
+      const img = await capturePhotoOnly();
+      setImageBlob(img);
+    } catch (err) {
+      setApiError("Failed to capture image.");
+    }
+  }, []);
+
+  const handleToggleAudio = useCallback(async () => {
+    setApiError(null);
+    if (isRecording && mediaRecorder) {
+      const audio = await stopAudioRecording(mediaRecorder);
+      setAudioBlob(audio);
+      setMediaRecorder(null);
+      setIsRecording(false);
+    } else {
+      const recorder = await startAudioRecording();
+      if (recorder) {
+        setMediaRecorder(recorder);
+        setIsRecording(true);
+      } else {
+        setApiError("Failed to start audio recording. Check permissions.");
+      }
+    }
+  }, [isRecording, mediaRecorder]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!imageBlob && !audioBlob) {
+      setApiError("Please capture an image or audio first.");
+      return;
+    }
+
+    setIsAnalyzing(true);
     setApiError(null);
 
     try {
-      const { image, audio } = await capturePanicSnapMedia();
-
-      setOverlay("analyzing");
-
       const formData = new FormData();
-      formData.append("image", image, "snapshot.jpg");
-      formData.append("audio", audio, "recording.webm");
+      if (imageBlob) formData.append("image", imageBlob, "snapshot.jpg");
+      if (audioBlob) formData.append("audio", audioBlob, "recording.webm");
 
       const res = await fetch("/api/panic-snap", { method: "POST", body: formData });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        const message =
-          typeof data.error === "string"
-            ? data.error
-            : `Analysis request failed (${res.status})`;
-        throw new Error(message);
+        throw new Error(typeof data.error === "string" ? data.error : `Analysis request failed (${res.status})`);
       }
 
       setResponse(data as PanicSnapResponse);
       setFirstAidOpen(true);
+      setImageBlob(null);
+      setAudioBlob(null);
     } catch (err) {
       console.error(err);
       setResponse(null);
-
-      if (err instanceof PanicSnapCaptureError) {
-        setApiError(err.message);
-      } else if (err instanceof Error) {
-        setApiError(err.message);
-      } else {
-        setApiError(
-          "Analysis failed. Please try again or call emergency services immediately."
-        );
-      }
+      setApiError(err instanceof Error ? err.message : "Analysis failed. Call emergency services.");
     } finally {
-      setOverlay(null);
+      setIsAnalyzing(false);
     }
-  }, [overlay]);
+  }, [imageBlob, audioBlob]);
 
   if (view === "missing") {
     return (
@@ -96,17 +117,71 @@ export function VictimApp() {
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-6 pb-8">
-        <p className="mb-10 max-w-[260px] text-center text-sm leading-relaxed text-zinc-500">
-          In an emergency, tap below to instantly capture audio &amp; visual evidence for AI triage.
-        </p>
+        <div className="w-full max-w-sm space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+            <h2 className="mb-4 text-center text-sm font-medium text-zinc-300">Gather Evidence</h2>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={handleCaptureImage}
+                className={`flex flex-col items-center justify-center gap-3 rounded-xl border p-4 transition-all ${
+                  imageBlob 
+                    ? "border-green-500/50 bg-green-500/10 text-green-400" 
+                    : "border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <Camera className="h-6 w-6" />
+                <span className="text-xs font-medium">{imageBlob ? "Retake Photo" : "Take Photo"}</span>
+              </button>
 
-        <PanicSnapButton onClick={handlePanicSnap} disabled={!!overlay} />
+              <button
+                onClick={handleToggleAudio}
+                className={`flex flex-col items-center justify-center gap-3 rounded-xl border p-4 transition-all ${
+                  isRecording 
+                    ? "border-red-500 bg-red-500/20 text-red-400 animate-pulse" 
+                    : audioBlob 
+                      ? "border-green-500/50 bg-green-500/10 text-green-400"
+                      : "border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {isRecording ? <Square className="h-6 w-6 fill-current" /> : <Mic className="h-6 w-6" />}
+                <span className="text-xs font-medium">
+                  {isRecording ? "Stop Recording" : audioBlob ? "Re-record Audio" : "Record Audio"}
+                </span>
+              </button>
+            </div>
+          </div>
 
-        {apiError && (
-          <p className="mt-6 max-w-[280px] text-center text-sm text-red-400" role="alert">
-            {apiError}
-          </p>
-        )}
+          <button
+            onClick={handleSubmit}
+            disabled={(!imageBlob && !audioBlob) || isAnalyzing || isRecording}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-sm font-semibold transition-all ${
+              (!imageBlob && !audioBlob) || isRecording
+                ? "bg-white/5 text-zinc-500 cursor-not-allowed"
+                : isAnalyzing
+                ? "bg-blue-600/50 text-white cursor-wait"
+                : "bg-blue-600 text-white hover:bg-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.4)]"
+            }`}
+          >
+            {isAnalyzing ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Analyzing Scene...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                Submit Evidence
+              </>
+            )}
+          </button>
+
+          {apiError && (
+            <div className="rounded-lg bg-red-500/10 p-3 text-center border border-red-500/20">
+              <p className="text-sm text-red-400" role="alert">{apiError}</p>
+            </div>
+          )}
+        </div>
 
         <p className="mt-10 text-center text-xs text-zinc-600">
           Your location &amp; media are encrypted in transit
@@ -124,7 +199,6 @@ export function VictimApp() {
         </button>
       </nav>
 
-      {overlay && <RecordingOverlay phase={overlay} />}
       <FirstAidModal
         open={firstAidOpen}
         onClose={() => setFirstAidOpen(false)}

@@ -103,7 +103,7 @@ async function recordAudioFromStream(
   });
 
   const audioBlob = new Blob(chunks, {
-    type: recorder.mimeType || mimeType || "audio/webm",
+    type: (recorder.mimeType || mimeType || "audio/webm").split(";")[0].trim(),
   });
 
   if (audioBlob.size === 0) {
@@ -138,25 +138,80 @@ function mapMediaError(err: unknown): PanicSnapCaptureError {
 }
 
 /** Requests camera/mic, captures a JPEG frame and ~3s of audio, then stops tracks. */
+export const createDummyImage = async () => {
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 480;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, 640, 480);
+    ctx.fillStyle = "#fff";
+    ctx.font = "24px sans-serif";
+    ctx.fillText("Camera not available", 20, 50);
+  }
+  return new Promise<Blob>((resolve) => 
+    canvas.toBlob((b) => resolve(b || new Blob()), "image/jpeg")
+  );
+};
+
+export async function capturePhotoOnly(): Promise<Blob> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    console.warn("Camera not supported. Using fallback image.");
+    return createDummyImage();
+  }
+  let stream: MediaStream | null = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+    return await capturePhotoFromStream(stream);
+  } catch (err) {
+    console.warn("Failed to capture real image. Error:", err);
+    return createDummyImage();
+  } finally {
+    stream?.getTracks().forEach((track) => track.stop());
+  }
+}
+
+export async function startAudioRecording(): Promise<MediaRecorder | null> {
+  if (!navigator.mediaDevices?.getUserMedia) return null;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = pickAudioMimeType();
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    recorder.start();
+    return recorder;
+  } catch (err) {
+    console.warn("Failed to start audio recording.", err);
+    return null;
+  }
+}
+
+export async function stopAudioRecording(recorder: MediaRecorder | null): Promise<Blob> {
+  if (!recorder) return new Blob([], { type: "audio/webm" });
+  
+  return new Promise<Blob>((resolve) => {
+    const chunks: BlobPart[] = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+    recorder.onstop = () => {
+      const type = (recorder.mimeType || "audio/webm").split(";")[0].trim();
+      recorder.stream.getTracks().forEach(t => t.stop());
+      resolve(new Blob(chunks, { type }));
+    };
+    recorder.stop();
+  });
+}
+
+/** Requests camera/mic, captures a JPEG frame and ~3s of audio, then stops tracks. */
 export async function capturePanicSnapMedia(): Promise<{
   image: Blob;
   audio: Blob;
 }> {
   const createDummyMedia = async () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 640;
-    canvas.height = 480;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, 640, 480);
-      ctx.fillStyle = "#fff";
-      ctx.font = "24px sans-serif";
-      ctx.fillText("Camera not available", 20, 50);
-    }
-    const image = await new Promise<Blob>((resolve) => 
-      canvas.toBlob((b) => resolve(b || new Blob()), "image/jpeg")
-    );
+    const image = await createDummyImage();
     const audio = new Blob([], { type: "audio/webm" });
     return { image, audio };
   };

@@ -8,7 +8,15 @@ import {
 
 export type GeminiSchema = Schema;
 
-const MODEL_ID = "gemini-1.5-pro-latest";
+const MODEL_ID = "gemini-3-flash-preview";
+
+function normalizeMimeType(mime: string | undefined, fallback: string): string {
+  const base = (mime || "").split(";")[0].trim().toLowerCase();
+  if (!base || base === "application/octet-stream") {
+    return fallback;
+  }
+  return base;
+}
 
 /** Returns a configured Gemini client or throws if the API key is missing. */
 export function createGeminiClient(): GoogleGenerativeAI {
@@ -37,7 +45,7 @@ export async function blobToInlinePart(blob: Blob, fallbackMime: string): Promis
   const bytes = Buffer.from(await blob.arrayBuffer());
   return {
     inlineData: {
-      mimeType: blob.type || fallbackMime,
+      mimeType: normalizeMimeType(blob.type, fallbackMime),
       data: bytes.toString("base64"),
     },
   };
